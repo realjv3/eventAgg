@@ -25,7 +25,7 @@ type ga4Event struct {
 	Params map[string]any `json:"params,omitempty"`
 }
 
-func SendGoogleAnalytics(event *domain.Event) error {
+func GoogleAnalytics(event *domain.Event) error {
 	measurementId := viper.GetString("GOOGLE_ANALYTICS_MEASUREMENTS_ID")
 	apiSecret := viper.GetString("GOOGLE_ANALYTICS_API_KEY")
 

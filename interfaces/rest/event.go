@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/realjv3/event-agg/domain"
 	"github.com/realjv3/event-agg/interfaces/dest"
+	"github.com/realjv3/event-agg/services/events"
 	"github.com/realjv3/event-agg/util"
 
 	"github.com/go-chi/chi/v5"
@@ -18,13 +18,15 @@ import (
 
 type EventHandler struct {
 	validate *validator.Validate
+	queue    *events.Queue
 }
 
-func NewEventHandler(r chi.Router) *EventHandler {
+func NewEventHandler(r chi.Router, queue *events.Queue) *EventHandler {
 	v := validator.New(validator.WithRequiredStructEnabled())
 
 	h := &EventHandler{
 		validate: v,
+		queue:    queue,
 	}
 
 	h.registerRoutes(r)
@@ -66,18 +68,20 @@ func (h *EventHandler) TrackEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// process event
-	log.Println("Sending event to Google Analytics")
-	err = dest.SendGoogleAnalytics(event)
+	h.queue.QueueEvent(events.Event{
+		Event: event,
+		Dest:  dest.GoogleAnalytics,
+	})
+
+	_, err = w.Write([]byte("event received"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 
-	w.Header().Set("Content-type", "application/json")
-	err = json.NewEncoder(w).Encode(event)
 	return
 }
 
+// eventCtx middleware sets anonymized event payload in the HTTP request context for downstream handlers
 func eventCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// parse request body
