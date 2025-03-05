@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/realvjv3/event-agg/domain"
+	"github.com/realjv3/event-agg/domain"
 )
 
 // Obfuscate SHA256 hashes personally identifying information according to HIPAA
@@ -14,23 +14,21 @@ func Obfuscate(event *domain.Event) {
 	}
 
 	if name, ok := event.Properties.UserProps["name"]; ok {
+		h := ""
+
 		switch name.(type) {
 		case string:
-			h := sha256.New()
-			h.Write([]byte(name.(string)))
-			event.Properties.UserProps["name"] = fmt.Sprintf("%x", h.Sum(nil))
+			h = fmt.Sprintf("%x", sha256.Sum256([]byte(name.(string))))
 		case []byte:
-			h := sha256.New()
-			h.Write(name.([]byte))
-			event.Properties.UserProps["name"] = fmt.Sprintf("%x", h.Sum(nil))
+			h = fmt.Sprintf("%x", sha256.Sum256(name.([]byte)))
 		}
+
+		event.Properties.UserProps["name"] = h
 	}
 
 	if email, ok := event.Properties.UserProps["email"]; ok {
 		if val, ok := email.(string); ok {
-			h := sha256.New()
-			h.Write([]byte(val))
-			event.Properties.UserProps["email"] = fmt.Sprintf("%x", h.Sum(nil))
+			event.Properties.UserProps["email"] = fmt.Sprintf("%x", sha256.Sum256([]byte(val)))
 		}
 	}
 }

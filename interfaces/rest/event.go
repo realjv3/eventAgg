@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/realvjv3/event-agg/domain"
-	"github.com/realvjv3/event-agg/util"
+	"github.com/realjv3/event-agg/domain"
+	"github.com/realjv3/event-agg/interfaces/dest"
+	"github.com/realjv3/event-agg/util"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -65,7 +66,12 @@ func (h *EventHandler) TrackEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// process event
-	log.Printf("Received event:%#v\n", event)
+	log.Println("Sending event to Google Analytics")
+	err = dest.SendGoogleAnalytics(event)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-type", "application/json")
 	err = json.NewEncoder(w).Encode(event)
