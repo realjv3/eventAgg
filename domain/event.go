@@ -2,7 +2,7 @@ package domain
 
 type Event struct {
 	Event      string     `json:"event" validate:"required"`
-	Properties Properties `json:"properties"`
+	Properties Properties `json:"properties" validate:"required"`
 }
 
 type Properties struct {
