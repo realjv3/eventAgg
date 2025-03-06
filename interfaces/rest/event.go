@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -73,7 +74,8 @@ func (h *EventHandler) TrackEvent(w http.ResponseWriter, r *http.Request) {
 		Dest:  dest.GoogleAnalytics,
 	})
 
-	_, err = w.Write([]byte("event received"))
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(event)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
@@ -92,8 +94,11 @@ func eventCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		// obfuscate personally identifying information
-		util.Obfuscate(&event)
+		// anonymize personally identifying information
+		err = util.GenerateHash(&event)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to generate hash: %v", err), http.StatusInternalServerError)
+		}
 
 		ctx := context.WithValue(r.Context(), "event", &event)
 
